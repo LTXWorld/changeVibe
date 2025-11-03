@@ -41,7 +41,7 @@ vibe-switcher <服务类型> <操作> [参数]
 ```
 
 - **服务类型**: `claude` (Claude Code) 或 `codex` (Codex)
-- **操作**: `list`, `switch`, `add`, `remove`, `current`
+- **操作**: `list`, `switch`, `add`, `remove`/`delete`, `current`
 
 ## 快速开始
 
@@ -143,12 +143,14 @@ source ~/.zshrc  # 使配置生效
 vibe-switcher claude add myapi sk-abc123 https://my-api.com
 ```
 
-#### `vibe-switcher claude remove <name>`
-从配置中删除指定的 Claude Code 中转商。
+#### `vibe-switcher claude remove <name>` / `vibe-switcher claude delete <name>`
+从配置中删除指定的 Claude Code 中转商，`delete` 为 `remove` 的别名，方便符合常见习惯的命令风格。
 
 **示例**:
 ```bash
 vibe-switcher claude remove myapi
+# 或
+vibe-switcher claude delete myapi
 ```
 
 #### `vibe-switcher claude current`
@@ -183,11 +185,24 @@ vibe-switcher codex switch fox
 vibe-switcher codex add duck sk-abc123 https://jp.duckcoding.com/v1 --network-access enabled
 ```
 
-#### `vibe-switcher codex remove <name>`
-从配置中删除指定的 Codex 中转商。
+#### `vibe-switcher codex remove <name>` / `vibe-switcher codex delete <name>`
+从配置中删除指定的 Codex 中转商，`delete` 为 `remove` 的别名，命令语义更直观。
+
+**示例**:
+```bash
+vibe-switcher codex remove duck
+# 或
+vibe-switcher codex delete duck
+```
 
 #### `vibe-switcher codex current`
 显示当前激活的 Codex 中转商信息，以及 Codex 配置文件中的实际值。
+
+#### 特定服务商适配
+为避免不同中转商的配置差异导致手动修改，这里内置了针对常见服务商的适配逻辑：
+
+- **duck**: 自动写入 `requires_openai_auth = true` 与 `disable_response_storage = true`，并在 `auth.json` 中仅保留 `OPENAI_API_KEY`。
+- **yescode**: 自动补充 `env_key = "YESCODE_API_KEY"`、为当前命令执行目录添加 `trust_level = "trusted"` 的项目配置，同时在 `auth.json` 中写入 `OPENAI_API_KEY` 与 `YESCODE_API_KEY` 两个字段。若需要为多个项目授权，可在 `~/.config/claude-switcher/config.json` 的 `codex_providers.yescode.projects` 中添加更多路径。
 
 ## 配置文件
 

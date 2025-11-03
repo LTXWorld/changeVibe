@@ -38,6 +38,96 @@ class CodexConfigManager:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
 
+    def _detect_project_path(self) -> str:
+        """检测当前项目路径，默认取调用命令时的工作目录"""
+        try:
+            return str(Path.cwd())
+        except Exception:
+            return str(self.home)
+
+    def _prepare_provider_settings(self, provider_name: str, provider_config: Dict) -> Dict:
+        """根据中转商配置生成统一的设置字典"""
+        # 名称映射：支持简写名称到完整名称的映射
+        name_mapping = {
+            "yes": "yescode"
+        }
+        # 如果 provider_config 中有 model_provider，优先使用；否则使用名称映射或原始名称
+        if "model_provider" in provider_config and provider_config["model_provider"]:
+            actual_model_provider = provider_config["model_provider"]
+        else:
+            actual_model_provider = name_mapping.get(provider_name, provider_name)
+        
+        settings = {
+            "model_provider": actual_model_provider,
+            "model": provider_config.get("model", "gpt-5-codex"),
+            "model_reasoning_effort": provider_config.get("model_reasoning_effort", "high"),
+            "network_access": provider_config.get("network_access") or None,
+            "disable_response_storage": provider_config.get("disable_response_storage"),
+            "wire_api": provider_config.get("wire_api", "responses"),
+            "requires_openai_auth": provider_config.get("requires_openai_auth"),
+            "env_key": provider_config.get("env_key"),
+            "projects": provider_config.get("projects"),
+            "auth_keys": provider_config.get("auth_keys"),
+        }
+
+        # 针对特定服务商的默认设置（根据实际 model_provider 判断）
+        if actual_model_provider == "duck" or provider_name == "duck":
+            # duck 需要 network_access, disable_response_storage, requires_openai_auth
+            settings["requires_openai_auth"] = True
+            settings["disable_response_storage"] = True
+            if not settings.get("network_access"):
+                settings["network_access"] = "enabled"
+            # duck 不需要 env_key
+            if "env_key" in settings:
+                del settings["env_key"]
+            # duck 的 auth.json 只需要 OPENAI_API_KEY
+            if not settings.get("auth_keys"):
+                settings["auth_keys"] = {
+                    "OPENAI_API_KEY": "api_key"
+                }
+        elif actual_model_provider == "yescode" or provider_name in ("yescode", "yes"):
+            # yescode 不需要 requires_openai_auth, disable_response_storage, network_access
+            settings["requires_openai_auth"] = None
+            settings["disable_response_storage"] = None
+            settings["network_access"] = None
+            settings["env_key"] = "YESCODE_API_KEY"
+            
+            # yescode 强制使用正确的 base_url
+            correct_base_url = "https://cotest.yes.vg/v1"
+            provider_config["base_url"] = correct_base_url
+
+            # yescode 官方配置示例中没有 projects 配置块，如果需要可以显式配置
+            # 不自动添加 projects 配置，以匹配官方示例
+
+            # auth.json 需要同时写入 OPENAI_API_KEY 与专属的 env_key
+            # 如果配置中没有 auth_keys，则设置默认值
+            if not settings.get("auth_keys"):
+                env_key = settings["env_key"]
+                settings["auth_keys"] = {
+                    "OPENAI_API_KEY": "api_key",
+                    env_key: "api_key"
+                }
+            # 如果配置中有 auth_keys，确保它包含必要的键
+            elif settings.get("auth_keys"):
+                auth_keys = settings["auth_keys"]
+                env_key = settings["env_key"]
+                # 确保 OPENAI_API_KEY 和 env_key 都存在
+                if "OPENAI_API_KEY" not in auth_keys:
+                    auth_keys["OPENAI_API_KEY"] = "api_key"
+                if env_key not in auth_keys:
+                    auth_keys[env_key] = "api_key"
+        else:
+            settings.setdefault("requires_openai_auth", True)
+            settings.setdefault("disable_response_storage", True)
+
+        if not settings.get("auth_keys"):
+            # 默认仅写入 OPENAI_API_KEY
+            settings["auth_keys"] = {
+                "OPENAI_API_KEY": "api_key"
+            }
+
+        return settings
+
     def generate_config_toml(self, provider_name: str, provider_config: Dict) -> str:
         """
         生成 config.toml 内容
@@ -46,31 +136,76 @@ class CodexConfigManager:
             provider_name: 中转商名称
             provider_config: 中转商配置信息
         """
-        toml_content = f'''model_provider = "{provider_name}"
-model = "gpt-5-codex"
-model_reasoning_effort = "high"
-'''
+        settings = self._prepare_provider_settings(provider_name, provider_config)
 
-        # 添加可选配置
-        if provider_config.get('network_access'):
-            toml_content += f'network_access = "{provider_config["network_access"]}"\n'
+        def format_toml_value(value):
+            if isinstance(value, bool):
+                return 'true' if value else 'false'
+            elif isinstance(value, (int, float)):
+                return str(value)
+            return f'"{value}"'
 
-        toml_content += 'disable_response_storage = true\n\n'
+        lines = [
+            f'model_provider = "{settings["model_provider"]}"',
+            f'model = "{settings["model"]}"'
+        ]
 
-        # 添加 model_providers 配置
-        toml_content += f'[model_providers.{provider_name}]\n'
-        toml_content += f'name = "{provider_name}"\n'
-        toml_content += f'base_url = "{provider_config["base_url"]}"\n'
-        toml_content += f'wire_api = "responses"\n'
-        toml_content += f'requires_openai_auth = true\n'
+        if settings.get("model_reasoning_effort"):
+            lines.append(f'model_reasoning_effort = "{settings["model_reasoning_effort"]}"')
 
-        return toml_content
+        # 添加可选配置（仅当值不为 None 时写入）
+        if settings.get("network_access") is not None:
+            lines.append(f'network_access = "{settings["network_access"]}"')
 
-    def update_auth_json(self, api_key: str):
+        disable_storage = settings.get("disable_response_storage")
+        if disable_storage is True:
+            lines.append('disable_response_storage = true')
+        elif disable_storage is False:
+            lines.append('disable_response_storage = false')
+
+        lines.append("")  # 空行分隔
+
+        # 添加 model_providers 配置块（使用 settings 中的 model_provider，而不是 provider_name）
+        model_provider = settings["model_provider"]
+        lines.append(f'[model_providers.{model_provider}]')
+        lines.append(f'name = "{model_provider}"')
+        lines.append(f'base_url = "{provider_config["base_url"]}"')
+
+        if settings.get("wire_api"):
+            lines.append(f'wire_api = "{settings["wire_api"]}"')
+
+        # 仅在 env_key 存在且不为 None 时写入
+        if settings.get("env_key") is not None:
+            lines.append(f'env_key = "{settings["env_key"]}"')
+
+        # 仅在 requires_openai_auth 为 True 时写入（yescode 不需要此字段）
+        if settings.get("requires_openai_auth") is True:
+            lines.append('requires_openai_auth = true')
+        elif settings.get("requires_openai_auth") is False and provider_config.get("requires_openai_auth") is not None:
+            # 仅当用户显式配置为 false 时才输出，避免破坏官方示例
+            lines.append('requires_openai_auth = false')
+
+        # 添加 projects 配置块
+        projects = settings.get("projects") or {}
+        for project_path, project_conf in projects.items():
+            lines.append("")
+            lines.append(f'[projects."{project_path}"]')
+            for key, value in project_conf.items():
+                lines.append(f'{key} = {format_toml_value(value)}')
+
+        return "\n".join(lines) + "\n"
+
+    def update_auth_json(self, provider_name: str, provider_config: Dict, api_key: str):
         """更新 auth.json 文件"""
-        auth_data = {
-            "OPENAI_API_KEY": api_key
-        }
+        settings = self._prepare_provider_settings(provider_name, provider_config)
+        auth_data = {}
+
+        for key_name, source in settings["auth_keys"].items():
+            if source == "api_key" or source == "OPENAI_API_KEY":
+                auth_data[key_name] = api_key
+            else:
+                # 允许从 provider_config 中读取其他字段
+                auth_data[key_name] = provider_config.get(source, "")
 
         with open(self.auth_json, 'w', encoding='utf-8') as f:
             json.dump(auth_data, f, indent=2, ensure_ascii=False)
@@ -106,7 +241,7 @@ model_reasoning_effort = "high"
             print(f"已更新配置文件: {self.config_toml}")
 
             # 更新 auth.json
-            self.update_auth_json(api_key)
+            self.update_auth_json(provider_name, provider_config, api_key)
             print(f"已更新认证文件: {self.auth_json}")
 
             return True

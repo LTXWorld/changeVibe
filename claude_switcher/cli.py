@@ -275,12 +275,14 @@ def main():
   vibe-switcher claude list                    # 列出所有 Claude Code 中转商
   vibe-switcher claude switch duck             # 切换到 duck 中转商
   vibe-switcher claude add fox <token> <url>   # 添加中转商
+  vibe-switcher claude delete fox              # 删除中转商
   vibe-switcher claude current                 # 查看当前配置
 
   # Codex 操作
   vibe-switcher codex list                     # 列出所有 Codex 中转商
   vibe-switcher codex switch duck              # 切换到 duck 中转商
   vibe-switcher codex add fox <key> <url>      # 添加中转商
+  vibe-switcher codex delete fox               # 删除中转商
   vibe-switcher codex current                  # 查看当前配置
         """
     )
@@ -307,10 +309,14 @@ def main():
     claude_add_parser.add_argument('url', help='API Base URL')
     claude_add_parser.set_defaults(func=claude_add)
 
-    # claude remove
+    # claude remove/delete
     claude_remove_parser = claude_subparsers.add_parser('remove', help='删除 Claude Code 中转商')
     claude_remove_parser.add_argument('name', help='中转商名称')
     claude_remove_parser.set_defaults(func=claude_remove)
+
+    claude_delete_parser = claude_subparsers.add_parser('delete', help='删除 Claude Code 中转商（别名）')
+    claude_delete_parser.add_argument('name', help='中转商名称')
+    claude_delete_parser.set_defaults(func=claude_remove)
 
     # claude current
     claude_current_parser = claude_subparsers.add_parser('current', help='显示当前 Claude Code 配置')
@@ -337,10 +343,14 @@ def main():
     codex_add_parser.add_argument('--network-access', help='Network Access (可选)', default="")
     codex_add_parser.set_defaults(func=codex_add)
 
-    # codex remove
+    # codex remove/delete
     codex_remove_parser = codex_subparsers.add_parser('remove', help='删除 Codex 中转商')
     codex_remove_parser.add_argument('name', help='中转商名称')
     codex_remove_parser.set_defaults(func=codex_remove)
+
+    codex_delete_parser = codex_subparsers.add_parser('delete', help='删除 Codex 中转商（别名）')
+    codex_delete_parser.add_argument('name', help='中转商名称')
+    codex_delete_parser.set_defaults(func=codex_remove)
 
     # codex current
     codex_current_parser = codex_subparsers.add_parser('current', help='显示当前 Codex 配置')

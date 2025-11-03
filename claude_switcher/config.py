@@ -41,12 +41,31 @@ class ConfigManager:
                     "fox": {
                         "api_key": "",
                         "base_url": "https://code.newcli.com/codex/v1",
-                        "network_access": ""
+                        "network_access": "",
+                        "requires_openai_auth": True,
+                        "disable_response_storage": True,
+                        "wire_api": "responses"
                     },
                     "duck": {
                         "api_key": "",
                         "base_url": "https://jp.duckcoding.com/v1",
-                        "network_access": "enabled"
+                        "network_access": "enabled",
+                        "requires_openai_auth": True,
+                        "disable_response_storage": True,
+                        "wire_api": "responses"
+                    },
+                    "yescode": {
+                        "api_key": "",
+                        "base_url": "https://cotest.yes.vg/v1",
+                        "network_access": "",
+                        "requires_openai_auth": False,
+                        "disable_response_storage": None,
+                        "wire_api": "responses",
+                        "env_key": "YESCODE_API_KEY",
+                        "auth_keys": {
+                            "OPENAI_API_KEY": "api_key",
+                            "YESCODE_API_KEY": "api_key"
+                        }
                     }
                 },
                 "current": None,
@@ -144,11 +163,15 @@ class ConfigManager:
         if "codex_providers" not in config:
             config["codex_providers"] = {}
 
-        config["codex_providers"][name] = {
+        provider = config["codex_providers"].get(name, {})
+        provider.update({
             "api_key": api_key,
             "base_url": base_url,
             "network_access": network_access
-        }
+        })
+        # 为新建的中转商设置默认值，便于后续扩展
+        provider.setdefault("wire_api", "responses")
+        config["codex_providers"][name] = provider
         self._save_config(config)
 
     def remove_codex_provider(self, name: str) -> bool:
@@ -183,4 +206,3 @@ class ConfigManager:
         if current:
             return self.get_codex_provider(current)
         return None
-
