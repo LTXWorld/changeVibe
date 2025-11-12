@@ -1,0 +1,16 @@
+[package]
+name = "vibe_switcher_tui"
+version = "0.1.0"
+edition = "2021"
+description = "基于 Rust 的 Vibe Switcher 交互式终端界面"
+authors = ["Vibe Switcher Contributors"]
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+crossterm = "0.27"
+directories = "5"
+ratatui = { version = "0.26", default-features = false, features = ["crossterm"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+unicode-width = "0.1"

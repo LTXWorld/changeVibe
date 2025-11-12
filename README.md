@@ -43,6 +43,52 @@ vibe-switcher <服务类型> <操作> [参数]
 - **服务类型**: `claude` (Claude Code) 或 `codex` (Codex)
 - **操作**: `list`, `switch`, `add`, `remove`/`delete`, `current`
 
+## Rust 交互式界面（实验性）
+
+在 `python` CLI 之外，仓库新增了基于 `Rust + ratatui` 的交互式终端工具，能够同时展示 Claude Code 与 Codex 的全部中转商，并提供键盘导航体验。该工具直接读取 `~/.config/claude-switcher/config.json`，因此始终与 `vibe-switcher` 保持一致。
+
+### 功能亮点
+
+- 📊 左右分栏实时列出 Claude/Codex 中转商，包含 URL、凭证配置状态及关键元数据
+- 🎯 Tab / Shift+Tab / h / l 快速切换服务面板，↑/↓ 选择目标中转商
+- 🔁 面板切换时自动聚焦当前激活的中转商，降低误操作风险
+- ⚡ Enter 调用 `vibe-switcher <service> switch <provider>`，成功后自动刷新配置
+- 🔄 `r` 可手动重新扫描配置文件，便于多人协作或外部脚本修改
+- 🧩 采用模块化状态管理，后续可扩展余额、延迟、健康度等指标展示
+
+### 启动方式
+
+```bash
+cd vibe_switcher_tui
+cargo run
+```
+
+> 运行前请确保本机已安装 Rust toolchain，并且已经通过 Python 版本的 `vibe-switcher` 初始化过配置文件。
+
+### 键位速查
+
+| 快捷键 | 作用 |
+| ------ | ---- |
+| `Tab` / `Shift+Tab` / `h` / `l` | 在 Claude/Codex 面板之间切换焦点 |
+| `↑` / `↓` / `j` / `k` | 在当前面板中移动高亮项（循环模式，支持 Vim 手势） |
+| `Enter` | 调用 `vibe-switcher` 执行切换 |
+| `r` | 重新读取配置文件 |
+| `q` / `Esc` | 退出界面 |
+
+### 架构速览
+
+- `src/main.rs`: 入口与事件循环，基于 `crossterm` 捕获键盘事件
+- `AppState`: 负责状态管理（列表、选中项、状态栏等）
+- `ProviderDisplay`: 对 `config.json` 内容做展示层映射
+- `ratatui` 渲染：分区布局 + `List` + `Paragraph` 实现图形化界面
+
+欢迎在此基础上继续扩展，例如：
+
+1. 接入中转商余额查询 API，在 detail 区域显示余额、额度或限速等信息
+2. 通过异步任务周期性刷新健康度/时延指标
+3. 支持批量切换（一次性同步 Claude 与 Codex）
+4. 导入更多配置源（如远程 JSON、团队共享库）
+
 ## 快速开始
 
 ### Claude Code 操作

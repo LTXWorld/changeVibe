@@ -10,3 +10,5 @@ build/
 *~
 .vscode/
 .idea/
+# Rust 构建产物
+vibe_switcher_tui/target/
