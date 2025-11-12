@@ -275,14 +275,14 @@ def main():
   vibe-switcher claude list                    # 列出所有 Claude Code 中转商
   vibe-switcher claude switch duck             # 切换到 duck 中转商
   vibe-switcher claude add fox <token> <url>   # 添加中转商
-  vibe-switcher claude delete fox              # 删除中转商
+  vibe-switcher claude remove fox              # 删除中转商
   vibe-switcher claude current                 # 查看当前配置
 
   # Codex 操作
   vibe-switcher codex list                     # 列出所有 Codex 中转商
   vibe-switcher codex switch duck              # 切换到 duck 中转商
   vibe-switcher codex add fox <key> <url>      # 添加中转商
-  vibe-switcher codex delete fox               # 删除中转商
+  vibe-switcher codex remove fox               # 删除中转商
   vibe-switcher codex current                  # 查看当前配置
         """
     )
@@ -294,32 +294,51 @@ def main():
     claude_subparsers = claude_parser.add_subparsers(dest='action', help='操作类型')
 
     # claude list
-    claude_list_parser = claude_subparsers.add_parser('list', help='列出所有 Claude Code 中转商')
+    claude_list_parser = claude_subparsers.add_parser(
+        'list',
+        help='列出所有 Claude Code 中转商',
+        description='列出所有已配置的 Claude Code 中转商，并显示当前正在使用的中转商'
+    )
     claude_list_parser.set_defaults(func=claude_list)
 
     # claude switch
-    claude_switch_parser = claude_subparsers.add_parser('switch', help='切换 Claude Code 中转商')
-    claude_switch_parser.add_argument('provider', help='中转商名称')
+    claude_switch_parser = claude_subparsers.add_parser(
+        'switch',
+        help='切换 Claude Code 中转商: switch <provider>',
+        description='切换到指定的 Claude Code 中转商',
+        usage='vibe-switcher claude switch <provider>'
+    )
+    claude_switch_parser.add_argument('provider', metavar='<provider>', help='要切换到的中转商名称')
     claude_switch_parser.set_defaults(func=claude_switch)
 
     # claude add
-    claude_add_parser = claude_subparsers.add_parser('add', help='添加或更新 Claude Code 中转商')
-    claude_add_parser.add_argument('name', help='中转商名称')
-    claude_add_parser.add_argument('token', help='API Token')
-    claude_add_parser.add_argument('url', help='API Base URL')
+    claude_add_parser = claude_subparsers.add_parser(
+        'add',
+        help='添加或更新 Claude Code 中转商: add <name> <token> <url>',
+        description='添加新的 Claude Code 中转商配置，或更新已存在的中转商配置',
+        usage='vibe-switcher claude add <name> <token> <url>'
+    )
+    claude_add_parser.add_argument('name', metavar='<name>', help='中转商名称（标识符）')
+    claude_add_parser.add_argument('token', metavar='<token>', help='API Token（用于认证）')
+    claude_add_parser.add_argument('url', metavar='<url>', help='API Base URL（中转商的接口地址）')
     claude_add_parser.set_defaults(func=claude_add)
 
-    # claude remove/delete
-    claude_remove_parser = claude_subparsers.add_parser('remove', help='删除 Claude Code 中转商')
-    claude_remove_parser.add_argument('name', help='中转商名称')
+    # claude remove
+    claude_remove_parser = claude_subparsers.add_parser(
+        'remove',
+        help='删除 Claude Code 中转商: remove <name>',
+        description='从配置中删除指定的 Claude Code 中转商',
+        usage='vibe-switcher claude remove <name>'
+    )
+    claude_remove_parser.add_argument('name', metavar='<name>', help='要删除的中转商名称')
     claude_remove_parser.set_defaults(func=claude_remove)
 
-    claude_delete_parser = claude_subparsers.add_parser('delete', help='删除 Claude Code 中转商（别名）')
-    claude_delete_parser.add_argument('name', help='中转商名称')
-    claude_delete_parser.set_defaults(func=claude_remove)
-
     # claude current
-    claude_current_parser = claude_subparsers.add_parser('current', help='显示当前 Claude Code 配置')
+    claude_current_parser = claude_subparsers.add_parser(
+        'current',
+        help='显示当前 Claude Code 配置',
+        description='显示当前正在使用的 Claude Code 中转商配置，包括配置文件中的实际值'
+    )
     claude_current_parser.set_defaults(func=claude_current)
 
     # ==================== Codex 子命令 ====================
@@ -327,33 +346,52 @@ def main():
     codex_subparsers = codex_parser.add_subparsers(dest='action', help='操作类型')
 
     # codex list
-    codex_list_parser = codex_subparsers.add_parser('list', help='列出所有 Codex 中转商')
+    codex_list_parser = codex_subparsers.add_parser(
+        'list',
+        help='列出所有 Codex 中转商',
+        description='列出所有已配置的 Codex 中转商，并显示当前正在使用的中转商'
+    )
     codex_list_parser.set_defaults(func=codex_list)
 
     # codex switch
-    codex_switch_parser = codex_subparsers.add_parser('switch', help='切换 Codex 中转商')
-    codex_switch_parser.add_argument('provider', help='中转商名称')
+    codex_switch_parser = codex_subparsers.add_parser(
+        'switch',
+        help='切换 Codex 中转商: switch <provider>',
+        description='切换到指定的 Codex 中转商',
+        usage='vibe-switcher codex switch <provider>'
+    )
+    codex_switch_parser.add_argument('provider', metavar='<provider>', help='要切换到的中转商名称')
     codex_switch_parser.set_defaults(func=codex_switch)
 
     # codex add
-    codex_add_parser = codex_subparsers.add_parser('add', help='添加或更新 Codex 中转商')
-    codex_add_parser.add_argument('name', help='中转商名称')
-    codex_add_parser.add_argument('api_key', help='API Key')
-    codex_add_parser.add_argument('url', help='API Base URL')
-    codex_add_parser.add_argument('--network-access', help='Network Access (可选)', default="")
+    codex_add_parser = codex_subparsers.add_parser(
+        'add',
+        help='添加或更新 Codex 中转商: add <name> <api_key> <url> [--network-access <value>]',
+        description='添加新的 Codex 中转商配置，或更新已存在的中转商配置',
+        usage='vibe-switcher codex add <name> <api_key> <url> [--network-access <value>]'
+    )
+    codex_add_parser.add_argument('name', metavar='<name>', help='中转商名称（标识符）')
+    codex_add_parser.add_argument('api_key', metavar='<api_key>', help='API Key（用于认证）')
+    codex_add_parser.add_argument('url', metavar='<url>', help='API Base URL（中转商的接口地址）')
+    codex_add_parser.add_argument('--network-access', metavar='<value>', help='Network Access 设置（可选，如 "enabled" 或 "disabled"）', default="")
     codex_add_parser.set_defaults(func=codex_add)
 
-    # codex remove/delete
-    codex_remove_parser = codex_subparsers.add_parser('remove', help='删除 Codex 中转商')
-    codex_remove_parser.add_argument('name', help='中转商名称')
+    # codex remove
+    codex_remove_parser = codex_subparsers.add_parser(
+        'remove',
+        help='删除 Codex 中转商: remove <name>',
+        description='从配置中删除指定的 Codex 中转商',
+        usage='vibe-switcher codex remove <name>'
+    )
+    codex_remove_parser.add_argument('name', metavar='<name>', help='要删除的中转商名称')
     codex_remove_parser.set_defaults(func=codex_remove)
 
-    codex_delete_parser = codex_subparsers.add_parser('delete', help='删除 Codex 中转商（别名）')
-    codex_delete_parser.add_argument('name', help='中转商名称')
-    codex_delete_parser.set_defaults(func=codex_remove)
-
     # codex current
-    codex_current_parser = codex_subparsers.add_parser('current', help='显示当前 Codex 配置')
+    codex_current_parser = codex_subparsers.add_parser(
+        'current',
+        help='显示当前 Codex 配置',
+        description='显示当前正在使用的 Codex 中转商配置，包括配置文件中的实际值'
+    )
     codex_current_parser.set_defaults(func=codex_current)
 
     # 解析参数

@@ -143,14 +143,12 @@ source ~/.zshrc  # 使配置生效
 vibe-switcher claude add myapi sk-abc123 https://my-api.com
 ```
 
-#### `vibe-switcher claude remove <name>` / `vibe-switcher claude delete <name>`
-从配置中删除指定的 Claude Code 中转商，`delete` 为 `remove` 的别名，方便符合常见习惯的命令风格。
+#### `vibe-switcher claude remove <name>`
+从配置中删除指定的 Claude Code 中转商。
 
 **示例**:
 ```bash
 vibe-switcher claude remove myapi
-# 或
-vibe-switcher claude delete myapi
 ```
 
 #### `vibe-switcher claude current`
@@ -185,14 +183,12 @@ vibe-switcher codex switch fox
 vibe-switcher codex add duck sk-abc123 https://jp.duckcoding.com/v1 --network-access enabled
 ```
 
-#### `vibe-switcher codex remove <name>` / `vibe-switcher codex delete <name>`
-从配置中删除指定的 Codex 中转商，`delete` 为 `remove` 的别名，命令语义更直观。
+#### `vibe-switcher codex remove <name>`
+从配置中删除指定的 Codex 中转商。
 
 **示例**:
 ```bash
 vibe-switcher codex remove duck
-# 或
-vibe-switcher codex delete duck
 ```
 
 #### `vibe-switcher codex current`
